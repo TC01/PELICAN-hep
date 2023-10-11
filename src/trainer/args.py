@@ -1,4 +1,8 @@
 import argparse
+if sys.version_info.minor <= 8:
+    from src import argparse9 as argparse
+else:
+    import argparse
 
 from math import inf
 

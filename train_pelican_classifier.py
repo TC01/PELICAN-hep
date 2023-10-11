@@ -1,7 +1,9 @@
+#!/usr/bin/env python
+
 import logging
 import os
 import sys
-import numpy 
+import numpy
 import random
 
 from src.trainer import which

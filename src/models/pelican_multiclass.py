@@ -59,16 +59,16 @@ class PELICANMultiClassifier(nn.Module):
         else:
             self.num_scalars = 0
 
-        if add_beams: 
+        if add_beams:
             assert embedding_dim > num_channels_scalar, f"num_channels_m[0][0] has to be at least {num_channels_scalar + 1} because you enabled --add_beams or --read-pid but got {embedding_dim}"
             embedding_dim -= num_channels_scalar
-        
+
         if irc_safe:
             self.softmask = SoftMask(device=device,dtype=dtype)
 
         # The input stack applies an encoding function
-        self.input_encoder = InputEncoder(embedding_dim, device = device, dtype = dtype)
-        
+        #self.input_encoder = InputEncoder(embedding_dim, device = device, dtype = dtype)
+
         # If there are scalars (like beam labels or PIDs) we promote them using an equivariant 1->2 layer and then concatenate them to the embedded dot products
         if self.num_scalars > 0:
             self.eq1to2 = Eq1to2(self.num_scalars, num_channels_scalar, activate_agg=activate_agg_in, activate_lin=activate_lin_in, activation = activation, average_nobj=average_nobj, config=config_out, factorize=False, device = device, dtype = dtype)
@@ -119,7 +119,7 @@ class PELICANMultiClassifier(nn.Module):
 
         # The first nonlinearity is the input encoder, which applies functions of the form ((1+x)^alpha-1)/alpha with trainable alphas.
         # In the C-safe case, this is still fine because inputs depends only on relative angles
-        inputs = self.input_encoder(inputs, mask=edge_mask.unsqueeze(-1), mode='angle' if self.irc_safe else 'log')
+        #inputs = self.input_encoder(inputs, mask=edge_mask.unsqueeze(-1), mode='angle' if self.irc_safe else 'log')
 
         # If beams are included, then at this point we also append the scalar channels that contain particle labels.
         if self.num_scalars > 0:

@@ -23,3 +23,6 @@ __pycache__/
 .ipynb_checkpoints
 *.sbatch~
 backup.gz
+
+# Don't commit the bundled copy of Python 3.9's argparse.
+src/argparse9.py

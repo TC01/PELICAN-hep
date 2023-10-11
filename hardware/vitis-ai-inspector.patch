@@ -1,0 +1,60 @@
+diff -rupNw vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/nndct_shared/inspector/device_allocator.py ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/nndct_shared/inspector/device_allocator.py
+--- vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/nndct_shared/inspector/device_allocator.py	2023-06-25 10:33:02.000000000 +0200
++++ ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/nndct_shared/inspector/device_allocator.py	2023-10-02 15:53:39.277578924 +0200
+@@ -131,7 +131,11 @@ class DPUAllocator(object):
+     sorted_nodes = graph.top_sort_nodeset(list(graph.nodes))
+     for node in sorted_nodes:
+       if node.op.type in [NNDCT_OP.RESHAPE, NNDCT_OP.FLATTEN, NNDCT_OP.SQUEEZE, NNDCT_OP.UNSQUEEZE]:
++        try:
+         pn = graph.parents(node)[0]
++        except IndexError:
++          print("Node has no parents?!")
++          continue
+         if self.is_dpu_node(pn):
+           if (not (all([self.is_dpu_node(cn) for cn in graph.children(node)]))) and pn.out_tensors[0].shape[0] != node.out_tensors[0].shape[0]:
+               msg = "First dimension is changed."
+diff -rupNw vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/hardware_v3/utils.py ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/hardware_v3/utils.py
+--- vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/hardware_v3/utils.py	2023-06-25 10:33:02.000000000 +0200
++++ ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/hardware_v3/utils.py	2023-10-02 15:32:01.982757072 +0200
+@@ -43,6 +43,8 @@ def prepare_deployable_graph(module, inp
+     quant_module.eval()
+     if isinstance(input_args, tuple):
+       _ = quant_module.to(device)(*input_args)
++    elif isinstance(input_args, dict):
++      _ = quant_module.to(device)(*(input_args.values()))
+     else:
+       _ = quant_module.to(device)(input_args)
+     deploy_graphs, dev_graph = get_deploy_graph_list(quant_module, graph, need_partition=False)
+diff -rupNw vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/parse/trace_helper.py ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/parse/trace_helper.py
+--- vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/parse/trace_helper.py	2023-06-25 10:33:02.000000000 +0200
++++ ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/parse/trace_helper.py	2023-10-02 14:53:35.830287630 +0200
+@@ -104,6 +104,7 @@ class TorchGraphHandler(object):
+       fw_graph, is_control_flow_graph = self._get_fw_graph_from_module(module, input_args, train)
+     except Exception as e:
+       NndctScreenLogger().error2user(QError.PYTORCH_TRACE, f"Failed to get graph from model and input args. The PyTorch internal failed reason is:\n{str(e)}")
++      raise e
+       sys.exit(1)
+     NndctScreenLogger().info("Finish tracing.")
+      
+diff -rupNw vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/utils/module_util.py ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/utils/module_util.py
+--- vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/utils/module_util.py	2023-06-25 10:33:02.000000000 +0200
++++ ../vitis-ai-pytorch.sif/opt/vitis_ai/conda/envs/vitis-ai-pytorch/lib/python3.8/site-packages/pytorch_nndct/utils/module_util.py	2023-10-02 16:18:40.044483422 +0200
+@@ -436,11 +436,18 @@ def collect_input_devices(input_args):
+   _collect_device(input_args, device_type_set)
+   return device_type_set
+ 
++import collections
++
+ def to_device(module, input_args, device):
+ 
+   if input_args is not None:
+     if isinstance(input_args, torch.Tensor):
+       input_args = input_args.to(device)
++    elif isinstance(input_args, dict):
++      new_args = collections.OrderedDict()
++      for key in input_args.keys():
++        _, new_args[key] = to_device(None, input_args[key], device)
++      input_args = new_args
+     else:
+       is_tuple = True if isinstance(input_args, tuple) else False
+       input_args = list(input_args)

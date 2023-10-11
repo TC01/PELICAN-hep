@@ -1,7 +1,7 @@
 # PELICAN Network for Particle Physics
 
     Permutation Equivariant, Lorentz Invariant/Covariant Aggregator Network for applications in Particle Physics.
-    At the moment it includes two main variants: a classifier (for e.g. top-tagging) and a 4-momentum regression network. 
+    At the moment it includes two main variants: a classifier (for e.g. top-tagging) and a 4-momentum regression network.
 
 arXiv link: https://arxiv.org/abs/2211.00454
 
@@ -28,13 +28,13 @@ PELICAN is a network that takes 4-momentum inputs (e.g. jet constituents) and us
 
 ### General Usage Tips
 
-* The classifier can be used via the script `train_pelican_classifier.py`. The 4-momehtum regressor is `train_pelican_cov.py`. 
-    The main required argument is `--datadir` since it provides the datasets. 
-* See data/sample_data/ for a small example of datasets. Each datapoint contains some number of input 4-momenta (E,p_x,p_y,p_z) under the key `Pmu`, 
+* The classifier can be used via the script `train_pelican_classifier.py`. The 4-momehtum regressor is `train_pelican_cov.py`.
+    The main required argument is `--datadir` since it provides the datasets.
+* See data/sample_data/ for a small example of datasets. Each datapoint contains some number of input 4-momenta (E,p_x,p_y,p_z) under the key `Pmu`,
     target 4-momenta (e.g. the true top momentum) under `truth_Pmu` and a classification label under `is_signal`. Regression datasets can contain multiple target 4-momenta under keys
     like `truth_Pmu_0` etc. The choice of the target key is controlled by the argument `--target`.
-* The same script can be used for inference on the test dataset when it is run with the flag `--eval`. 
-* Model checkpoints can be loaded via `--load` for inference or continued training. 
+* The same script can be used for inference on the test dataset when it is run with the flag `--eval`.
+* Model checkpoints can be loaded via `--load` for inference or continued training.
 * By default the model is run on a GPU, but CPU evaluation can be forced via `--cpu`.
 * The argument `--verbose` (correspodinginly `--no-verbose`) can be used to write per-minibatch stats into the log.
 * The number of particles in each event can vary. Most computations are done with masks that properly exclude zero 4-momenta. The argument `--nobj` sets the maximum number of particles loaded from the dataset. Argument `--add-beams` also appends two "beam" particles of the form (1,0,0,±1) to the inputs to help the network learn that bias in the dataset due to the fixed z-axis. With this flag, the intermediate tensors in Eq2to2 layers will have shape [Batch, 2+Nobj, 2+Nobj, Channel].
@@ -61,12 +61,15 @@ python3 train_pelican_classifier.py --datadir=./data/sample_data/run12 --target=
 python3 train_pelican_cov.py --datadir=./data/sample_data/run12 --target=truth_Pmu --nobj=85 --nobj-avg=20 --num-epoch=64 --num-train=60000 --num-valid=60000 --batch-size=64 --prefix=regressor --optim=adamw --activation=leakyrelu --factorize --lr-decay-type=warm --lr-init=0.0025 --lr-final=1e-6 --drop-rate=0.05 --drop-rate-out=0.05 --weight-decay=0.025
 ```
 
+### Studies for Hardware ML
+
+See [hardware/README.md]() for an overview of deploying PELICAN on hardware.
 
 ## Authors
 
 Alexander Bogatskiy, Flatiron Institute
 
-Jan T. Offermann, University of Chicago 
+Jan T. Offermann, University of Chicago
 
 Timothy Hoffman, University of Chicago
 
